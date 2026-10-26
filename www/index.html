@@ -1051,6 +1051,30 @@ window.onload = checkFullStatus;
 <script src="search.js"></script>
 
 <script>
+// Мост для Capacitor: превращаем нативный интент в параметры URL, чтобы ваш код сработал без изменений
+async function initAndroidShareBridge() {
+    if (window.Capacitor && window.Capacitor.Plugins.Intent) {
+        try {
+            const res = await window.Capacitor.Plugins.Intent.getIntent();
+            if (res && res.value) {
+                const currentUrl = new URL(window.location.href);
+                // Если в URL еще нет параметров, а интент прилетел — добавляем его в строку запроса и перезагружаем страницу
+                if (!currentUrl.searchParams.has('url') && !currentUrl.searchParams.has('text')) {
+                    currentUrl.searchParams.set('url', res.value);
+                    window.location.href = currentUrl.toString();
+                }
+            }
+        } catch (e) {
+            console.error("Ошибка получения интента:", e);
+        }
+    }
+}
+
+// Запускаем проверку при открытии приложения
+document.addEventListener('DOMContentLoaded', () => {
+    initAndroidShareBridge();
+});
+
 // Обработка входящей ссылки из меню «Поделиться» (Web Share Target)
 window.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
