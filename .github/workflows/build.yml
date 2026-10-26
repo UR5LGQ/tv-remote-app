@@ -30,73 +30,8 @@ jobs:
           npx cap add android
           npx cap sync android
 
-      - name: Patch AndroidManifest for Share Intent
-        run: |
-          python3 -c '
-          path = "android/app/src/main/AndroidManifest.xml"
-          with open(path, "r") as f:
-              content = f.read()
-          
-          intent_filter = """
-              <intent-filter>
-                  <action android:name="android.intent.action.SEND" />
-                  <category android:name="android.intent.category.DEFAULT" />
-                  <data android:mimeType="text/plain" />
-              </intent-filter>
-          """
-          if "action.SEND" not in content:
-              content = content.replace("</activity>", intent_filter + "\n            </activity>", 1)
-              with open(path, "w") as f:
-                  f.write(content)
-          '
-
-      - name: Patch MainActivity for Share Intent Handling
-        run: |
-          python3 -c '
-          import glob
-          files = glob.glob("android/app/src/main/java/**/MainActivity.java", recursive=True)
-          if files:
-              path = files[0]
-              with open(path, "r") as f:
-                  code = f.read()
-              
-              new_code = """package com.tvremote.app;
-
-import android.content.Intent;
-import android.os.Bundle;
-import com.getcapacitor.BridgeActivity;
-
-public class MainActivity extends BridgeActivity {
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        handleIntent(getIntent());
-    }
-
-    @Override
-    protected void onNewIntent(Intent intent) {
-        super.onNewIntent(intent);
-        handleIntent(intent);
-    }
-
-    private void handleIntent(Intent intent) {
-        String action = intent.getAction();
-        String type = intent.getType();
-        if (Intent.ACTION_SEND.equals(action) && type != null) {
-            if ("text/plain".equals(type)) {
-                String sharedText = intent.getStringExtra(Intent.EXTRA_TEXT);
-                if (sharedText != null && bridge != null && bridge.getWebView() != null) {
-                    final String url = "file:///android_asset/public/index.html?url=" + android.net.Uri.encode(sharedText);
-                    runOnUiThread(() -> bridge.getWebView().loadUrl(url));
-                }
-            }
-        }
-    }
-}
-"""
-              with open(path, "w") as f:
-                  f.write(new_code)
-          '
+      - name: Run Python Patch
+        run: python3 patch.py
 
       - name: Build APK
         run: |
