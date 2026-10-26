@@ -1,0 +1,8 @@
+{
+  "appId": "com.tvremote.app",
+  "appName": "Пульт ТВ",
+  "webDir": "www",
+  "server": {
+    "cleartext": true
+  }
+}
