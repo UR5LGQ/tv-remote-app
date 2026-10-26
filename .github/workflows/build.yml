@@ -30,6 +30,26 @@ jobs:
           npx cap add android
           npx cap sync android
 
+      - name: Patch AndroidManifest for Share Intent
+        run: |
+          python3 -c '
+          path = "android/app/src/main/AndroidManifest.xml"
+          with open(path, "r") as f:
+              content = f.read()
+          
+          intent_filter = """
+              <intent-filter>
+                  <action android:name="android.intent.action.SEND" />
+                  <category android:name="android.intent.category.DEFAULT" />
+                  <data android:mimeType="text/plain" />
+              </intent-filter>
+          """
+          if "action.SEND" not in content:
+              content = content.replace("</activity>", intent_filter + "\n            </activity>", 1)
+              with open(path, "w") as f:
+                  f.write(content)
+          '
+
       - name: Build APK
         run: |
           cd android
