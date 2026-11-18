@@ -1016,12 +1016,46 @@ function updateProgressBarUI(curSec, durSec) {
     }
 }
 
+/ Универсальная функция извлечения YouTube ID из любых ссылок
+function extractYouTubeId(urlOrText) {
+    var text = (urlOrText || "").trim();
+    
+    // Регулярное выражение для поиска ID YouTube в различных форматах (watch, live, shorts, youtu.be)
+    var regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|live\/)([^#&?]*).*/;
+    var match = text.match(regExp);
+
+    if (match && match[2].length === 11) {
+        return match[2];
+    }
+    
+    // Если текст сам по себе является чистым 11-символьным ID
+    if (/^[a-zA-Z0-9_-]{11}$/.test(text)) {
+        return text;
+    }
+    
+    return null;
+}
+	
 // Функции логики поиска и работы с результатами
 async function doSearch(isLoadMore = false) {
     const qInput = document.getElementById('query');
     const q = qInput ? qInput.value.trim() : '';
     if (!q) return;
 
+	
+    // 👉 ПРОВЕРКА: ЕСЛИ ВВЕДЕНА ССЫЛКА ИЛИ ID YOUTUBE (пропускаем поиск)
+    if (!isLoadMore) {
+        const ytId = extractYouTubeId(q);
+        if (ytId) {
+            console.log("Обнаружена прямая ссылка/ID YouTube в поиске:", ytId);
+            qInput.value = ''; // Очищаем поле ввода
+            
+            // Сразу запускаем видео через существующую функцию startVideo (передаем ID)
+            await startVideo(ytId, "YouTube Видео по ссылке", "");
+            return;
+        }
+    }
+	
     if (!isLoadMore) {
         currentQuery = q;
         currentNextPageToken = '';
